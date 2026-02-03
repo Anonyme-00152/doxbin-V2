@@ -1,34 +1,41 @@
-/* Grid pattern background */
-.bg-grid-pattern {
-  background-image: 
-    linear-gradient(rgba(0, 240, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.1) 1px, transparent 1px);
-  background-size: 50px 50px;
-}
-
-/* Animation delays for terminal text */
-.delay-100 {
-  animation-delay: 0.1s;
-}
-
-.delay-200 {
-  animation-delay: 0.2s;
-}
-
-/* Custom scrollbar */
+/* Custom scrollbar for hacker theme */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: #000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #00f0ff, #b800ff);
-  border-radius: 4px;
+  background: #991b1b;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #00d4e0, #9900cc);
+  background: #ef4444;
+}
+
+/* CRT Scanline Animation */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.scanline-effect::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, rgba(255, 0, 0, 0.05), transparent);
+  animation: scanline 8s linear infinite;
+  pointer-events: none;
+}
+
+/* Input focus glow */
+input:focus {
+  box-shadow: 0 0 15px rgba(185, 28, 28, 0.2);
+}
+
+/* Glitch effect for titles (optional) */
+.glitch {
+  text-shadow: 2px 0 #ff0000, -2px 0 #000;
 }
