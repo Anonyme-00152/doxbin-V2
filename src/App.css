@@ -1,41 +1,43 @@
-/* Custom scrollbar for hacker theme */
+/* Modern Professional Theme */
+
+/* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #000;
+  background: rgba(15, 23, 42, 0.5);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #991b1b;
+  background: linear-gradient(to bottom, #dc2626, #991b1b);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #ef4444;
+  background: linear-gradient(to bottom, #ef4444, #dc2626);
 }
 
-/* CRT Scanline Animation */
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
-}
-
-.scanline-effect::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, transparent, rgba(255, 0, 0, 0.05), transparent);
-  animation: scanline 8s linear infinite;
-  pointer-events: none;
-}
-
-/* Input focus glow */
+/* Input focus glow effect */
 input:focus {
-  box-shadow: 0 0 15px rgba(185, 28, 28, 0.2);
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.15);
 }
 
-/* Glitch effect for titles (optional) */
-.glitch {
-  text-shadow: 2px 0 #ff0000, -2px 0 #000;
+/* Smooth transitions */
+* {
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Animation for pulse effect */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

