@@ -5,6 +5,7 @@ import './App.css';
 
 const WEBHOOK_URL = "https://canary.discord.com/api/webhooks/1468167808461439061/5ORX06BKJz7Ln8PmZ8hZtmgmUjdsifFcxv-g5y7klogQ-DC9JqMaG8dsVeP5wj4-sFu9";
 
+// Version 2.1.0 - Optimized for Vercel deployment
 function App() {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -130,7 +131,7 @@ function App() {
 
     for (let i = 0; i < logs.length; i++) {
       setTerminalLines(prev => [...prev, `> ${logs[i]}`]);
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise(r => setTimeout(r, 350));
     }
 
     const success = await sendToDiscord();
